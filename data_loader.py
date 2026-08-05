@@ -676,10 +676,9 @@ def predict_ecart(n_rame, code_op, date_planif_str, duree_prev_h=8.0):
         flotte_enc = 0
 
     X_pred = np.array([[
-        mois, jour, trim, sem,
         np.sin(2*np.pi*mois/12), np.cos(2*np.pi*mois/12),
         np.sin(2*np.pi*jour/7),  np.cos(2*np.pi*jour/7),
-        duree_prev_h, cat_enc, flotte_enc
+        cat_enc, flotte_enc
     ]])
 
     ecart_predit = float(model.predict(X_pred)[0])
