@@ -599,7 +599,7 @@ def train_model():
     df['categorie_enc'] = le_cat.fit_transform(df['categorie'].astype(str))
     df['flotte_enc']    = le_flotte.fit_transform(df['flotte'].astype(str))
 
-    features = ['duree_previsionnelle_h', 'categorie_enc', 'flotte_enc']
+    features = ['mois_sin', 'mois_cos', 'jour_sin', 'jour_cos', 'categorie_enc', 'flotte_enc']
 
     X = df[features].fillna(0)
     y = df['ecart_debut_h']
