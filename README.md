@@ -49,7 +49,7 @@ GROQ_API_KEY=votre_cle_groq
 python app.py
 ```
 
-L'application démarre sur : http://127.0.0.1:5000
+L'application est accessible en ligne : https://tgv-maintenance-app.onrender.com
 
 ---
 
