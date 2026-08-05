@@ -255,7 +255,7 @@ def parc():
 def rame_detail(n_rame):
     import math
     _, _, df_all = dl.load_data()
-    df = df_all[(df_all['match_fiable'] == True) & (df_all['n__rame'] == n_rame)].copy()
+    df = df_all[(df_all['match_fiable'] == True) & (df_all['n__rame'].astype(str) == str(n_rame))].copy()
 
     if df.empty:
         return redirect(url_for('parc'))
