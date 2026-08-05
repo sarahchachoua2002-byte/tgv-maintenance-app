@@ -29,7 +29,7 @@ app_step1.py
 ../*.bak
 
 # Configuration locale IDE
-.claude/
+.ide/
 
 # OS
 .DS_Store
