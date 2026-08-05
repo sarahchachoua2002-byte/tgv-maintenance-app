@@ -1,0 +1,71 @@
+{
+  "accuracy": 75.2,
+  "features": [
+    "categorie_enc",
+    "flotte_enc",
+    "code_enc",
+    "site_enc",
+    "jour_semaine",
+    "jour_ferie",
+    "taux_hist_cat",
+    "taux_hist_code",
+    "charge_semaine",
+    "cat_flotte_enc"
+  ],
+  "importances": [
+    {
+      "feature": "taux_hist_code",
+      "label": "Taux hist. code op.",
+      "value": 28.2
+    },
+    {
+      "feature": "taux_hist_cat",
+      "label": "Taux hist. catégorie",
+      "value": 25.9
+    },
+    {
+      "feature": "charge_semaine",
+      "label": "Charge semaine",
+      "value": 7.5
+    },
+    {
+      "feature": "site_enc",
+      "label": "Site",
+      "value": 6.6
+    },
+    {
+      "feature": "cat_flotte_enc",
+      "label": "Catégorie × Flotte",
+      "value": 5.8
+    },
+    {
+      "feature": "categorie_enc",
+      "label": "Catégorie",
+      "value": 5.7
+    },
+    {
+      "feature": "jour_semaine",
+      "label": "Jour semaine",
+      "value": 5.7
+    },
+    {
+      "feature": "code_enc",
+      "label": "Code op.",
+      "value": 5.0
+    },
+    {
+      "feature": "flotte_enc",
+      "label": "Flotte",
+      "value": 4.9
+    },
+    {
+      "feature": "jour_ferie",
+      "label": "Jour férié",
+      "value": 4.6
+    }
+  ],
+  "n_matched": 1235,
+  "n_unmatched": 1527,
+  "n_prog": 5892,
+  "n_real": 99664
+}

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block sim_label %}{{ kpis.sim_semaine }}{% endblock %}
+
+{% block content %}
+
+<!-- KPIs -->
+<div class="g-row">
+  <div class="g-4">
+    <div class="kpi">
+      <div class="kpi-ic b"><i class="bi bi-train-front" style="color:#3B82F6"></i></div>
+      <div>
+        <div class="kpi-val">{{ kpis.nb_operations_semaine }}</div>
+        <div class="kpi-lbl">Opérations — {{ kpis.sim_semaine }}</div>
+        <div class="kpi-sub ok">{{ kpis.total_operations }} au total S1–S12</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="kpi">
+      <div class="kpi-ic o"><i class="bi bi-clock-history" style="color:#F59E0B"></i></div>
+      <div>
+        <div class="kpi-val">{{ kpis.ecart_moyen_h }}h</div>
+        <div class="kpi-lbl">Écart moyen planif / réal</div>
+        <div class="kpi-sub {% if kpis.ecart_moyen_h > 0 %}up{% else %}down{% endif %}">
+          {% if kpis.ecart_moyen_h > 0 %}▲ Retard moyen{% else %}▼ Avance moyenne{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="kpi">
+      <div class="kpi-ic r"><i class="bi bi-exclamation-triangle" style="color:#EF4444"></i></div>
+      <div>
+        <div class="kpi-val">{{ kpis.taux_retard_pct }}%</div>
+        <div class="kpi-lbl">Taux de retard global</div>
+        <div class="kpi-sub {% if kpis.taux_retard_pct > 50 %}up{% else %}ok{% endif %}">
+          {% if kpis.taux_retard_pct > 50 %}⚠ Au-dessus de 50%{% else %}✓ Sous contrôle{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="kpi">
+      <div class="kpi-ic r"><i class="bi bi-shield-exclamation" style="color:#E30613"></i></div>
+      <div>
+        <div class="kpi-val">{{ kpis.taux_nonconformite_pct }}%</div>
+        <div class="kpi-lbl">Non-conformité réglementaire</div>
+        <div class="kpi-sub {% if kpis.taux_nonconformite_pct > 20 %}up{% else %}ok{% endif %}">
+          {% if kpis.taux_nonconformite_pct > 20 %}🚨 Seuil 20% dépassé{% else %}✓ Dans les seuils{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphique + Alertes -->
+<div class="g-row">
+  <div class="g-8">
+    <div class="card" style="height:100%">
+      <div class="card-head"><i class="bi bi-graph-up" style="color:#E30613"></i> Évolution mensuelle des écarts</div>
+      <div class="card-body">
+        <div class="chart-box" style="height:260px"><canvas id="cEvol"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4" style="flex:1">
+    <div class="card" style="height:100%">
+      <div class="card-head">
+        <i class="bi bi-bell" style="color:#F59E0B"></i> Alertes
+        <span class="badge b-red" style="margin-left:auto">{{ alertes|length }}</span>
+      </div>
+      <div class="card-body" style="overflow-y:auto;max-height:300px;padding-top:4px">
+        {% for a in alertes %}
+        <div class="alrt">
+          <span class="alrt-ic">{{ a.icone }}</span>
+          <div>
+            <div class="alrt-t">{{ a.titre }}</div>
+            <div class="alrt-d">{{ a.detail }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Distribution + Flottes + Accès -->
+<div class="g-row">
+  <div class="g-5">
+    <div class="card">
+      <div class="card-head"><i class="bi bi-bar-chart" style="color:#3B82F6"></i> Distribution des écarts (h)</div>
+      <div class="card-body">
+        <div class="chart-box" style="height:200px"><canvas id="cDist"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:12px">
+          <span><span style="color:#22C55E">■</span> En avance</span>
+          <span><span style="color:#EF4444">■</span> En retard</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="card">
+      <div class="card-head"><i class="bi bi-pie-chart" style="color:#8B5CF6"></i> Répartition par flotte</div>
+      <div class="card-body">
+        <div class="chart-box" style="height:200px"><canvas id="cFlotte"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="card">
+      <div class="card-head"><i class="bi bi-lightning" style="color:#F59E0B"></i> Accès rapides</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+        <a href="{{ url_for('parc') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="bi bi-train-front"></i> Parc de rames
+        </a>
+        <a href="{{ url_for('planning') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="bi bi-calendar3"></i> Planning
+        </a>
+        <a href="{{ url_for('historique') }}" class="btn btn-ghost" style="justify-content:center">
+          <i class="bi bi-graph-up"></i> Historique
+        </a>
+        <a href="{{ url_for('prediction') }}" class="btn btn-red" style="justify-content:center">
+          <i class="bi bi-cpu-fill"></i> Prédiction IA
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Évolution mensuelle
+fetch('/api/chart/historique').then(r=>r.json()).then(d=>{
+  new Chart(document.getElementById('cEvol'),{
+    data:{labels:d.labels,datasets:[
+      {type:'bar',label:'Nb interventions',data:d.nb_inter,backgroundColor:'rgba(59,130,246,.15)',
+       borderColor:'rgba(59,130,246,.3)',borderWidth:1,yAxisID:'y2'},
+      {type:'line',label:'Écart moyen (h)',data:d.ecart_moyen,borderColor:'#F59E0B',
+       backgroundColor:'rgba(245,158,11,.1)',borderWidth:2.5,tension:.4,fill:true,yAxisID:'y1',pointRadius:3},
+      {type:'line',label:'Taux retard (%)',data:d.taux_retard,borderColor:'#EF4444',
+       borderWidth:2,tension:.4,borderDash:[5,4],yAxisID:'y1',pointRadius:2},
+      {type:'line',label:'Non-conformité (%)',data:d.taux_nc,borderColor:'#E30613',
+       borderWidth:1.5,tension:.4,borderDash:[3,3],yAxisID:'y1',pointRadius:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}},
+      scales:{
+        y1:{type:'linear',position:'left',title:{display:true,text:'h / %'},grid:{color:'#F1F5F9'}},
+        y2:{type:'linear',position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Nb ops'}},
+        x:{ticks:{font:{size:10}},grid:{color:'#F1F5F9'}}
+      }}
+  });
+});
+
+// Distribution
+fetch('/api/chart/distribution').then(r=>r.json()).then(d=>{
+  const colors=d.labels.map(l=>parseInt(l)>=0?'rgba(239,68,68,.75)':'rgba(34,197,94,.75)');
+  new Chart(document.getElementById('cDist'),{
+    type:'bar',
+    data:{labels:d.labels,datasets:[{label:'Opérations',data:d.counts,backgroundColor:colors,borderWidth:0,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxTicksLimit:9,font:{size:9}},grid:{display:false}},
+              y:{grid:{color:'#F1F5F9'}}}}
+  });
+});
+
+// Flottes
+fetch('/api/chart/flottes').then(r=>r.json()).then(d=>{
+  const pal=['#E30613','#3B82F6','#F59E0B','#22C55E','#8B5CF6','#06B6D4','#EC4899'];
+  new Chart(document.getElementById('cFlotte'),{
+    type:'doughnut',
+    data:{labels:d.labels,datasets:[{data:d.nb,backgroundColor:pal,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{boxWidth:11,font:{size:11},padding:10}}},
+      cutout:'65%'}
+  });
+});
+</script>
+{% endblock %}

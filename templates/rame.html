@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Rame {{ info.n_rame }} — SNCF{% endblock %}
+{% block page_title %}Fiche rame · {{ info.n_rame }}{% endblock %}
+{% block sim_label %}{{ info.flotte }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:16px">
+  <a href="{{ url_for('parc') }}" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-left"></i> Retour au parc</a>
+</div>
+
+<!-- En-tête rame -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div style="width:60px;height:60px;border-radius:14px;background:#FFF0F0;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">🚄</div>
+    <div style="flex:1;min-width:160px">
+      <div style="font-size:22px;font-weight:900;color:var(--dark)">Rame {{ info.n_rame }}</div>
+      <div style="color:var(--muted);font-size:13px;margin-top:4px">
+        <i class="bi bi-train-front"></i> {{ info.flotte }} &nbsp;·&nbsp;
+        <i class="bi bi-tag"></i> {{ info.categorie }}
+      </div>
+    </div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div class="ms-val">{{ info.nb_ops }}</div>
+        <div class="ms-lbl">Opérations</div>
+      </div>
+      <div style="text-align:center">
+        <div class="ms-val" style="color:{% if info.ecart_moy > 0 %}#DC2626{% else %}#16A34A{% endif %}">
+          {% if info.ecart_moy > 0 %}+{% endif %}{{ info.ecart_moy }}h
+        </div>
+        <div class="ms-lbl">Écart moyen</div>
+      </div>
+      <div style="text-align:center">
+        <div class="ms-val" style="color:{% if info.taux_retard > 50 %}#DC2626{% else %}#16A34A{% endif %}">{{ info.taux_retard }}%</div>
+        <div class="ms-lbl">Taux retard</div>
+      </div>
+      <div style="text-align:center">
+        <div class="ms-val" style="color:{% if info.taux_nc > 20 %}#DC2626{% else %}#16A34A{% endif %}">{{ info.taux_nc }}%</div>
+        <div class="ms-lbl">Non-conformité</div>
+      </div>
+    </div>
+    <a href="{{ url_for('prediction') }}?rame={{ info.n_rame }}" class="btn btn-red" style="flex-shrink:0">
+      <i class="bi bi-cpu-fill"></i> Prédire un écart
+    </a>
+  </div>
+</div>
+
+<!-- Graphiques -->
+<div class="g-row">
+  <div class="g-7">
+    <div class="card">
+      <div class="card-head"><i class="bi bi-bar-chart" style="color:#E30613"></i> Évolution des écarts — Rame {{ info.n_rame }}</div>
+      <div class="card-body">
+        <div class="chart-box" style="height:230px"><canvas id="cRame"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-5">
+    <div class="card">
+      <div class="card-head"><i class="bi bi-pie-chart" style="color:#3B82F6"></i> Répartition des statuts</div>
+      <div class="card-body">
+        <div class="chart-box" style="height:230px"><canvas id="cStat"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historique opérations -->
+<div class="card">
+  <div class="card-head">
+    <i class="bi bi-list-ul" style="color:var(--muted)"></i> Historique des opérations
+    <span class="badge b-gray" style="margin-left:8px">{{ ops|length }}</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Code opération</th>
+          <th>Date planifiée</th>
+          <th>Début réel</th>
+          <th>Fin réelle</th>
+          <th>Écart début</th>
+          <th>Écart butée</th>
+          <th>Durée réelle</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in ops %}
+        <tr>
+          <td><strong>{{ op.code_op }}</strong></td>
+          <td style="font-size:12px;color:var(--muted)">{{ op.debut_planifie }}</td>
+          <td style="font-size:12px;color:var(--muted)">{{ op.debut_reel }}</td>
+          <td style="font-size:12px;color:var(--muted)">{{ op.fin_reelle }}</td>
+          <td>
+            {% if op.ecart_debut_h != '—' %}
+              <span style="font-weight:700;color:{% if op.ecart_debut_h > 0 %}#DC2626{% elif op.ecart_debut_h < 0 %}#16A34A{% else %}var(--muted){% endif %}">
+                {% if op.ecart_debut_h > 0 %}+{% endif %}{{ "%.1f"|format(op.ecart_debut_h) }}h
+              </span>
+            {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+          </td>
+          <td>
+            {% if op.ecart_butee_h != '—' and op.ecart_butee_h is number %}
+              <span style="font-weight:700;color:{% if op.ecart_butee_h > 0 %}#DC2626{% else %}#16A34A{% endif %}">
+                {% if op.ecart_butee_h > 0 %}+{% endif %}{{ "%.1f"|format(op.ecart_butee_h) }}h
+              </span>
+            {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+          </td>
+          <td>
+            {% if op.duree_reelle_h != '—' and op.duree_reelle_h is number %}
+              {{ "%.1f"|format(op.duree_reelle_h) }}h
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if op.statut_conformite == 'conforme' %}
+              <span class="badge b-green">✅ Conforme</span>
+            {% elif op.statut_conformite == 'non_conforme' %}
+              <span class="badge b-red">🚨 Non conforme</span>
+            {% elif op.statut_conformite == 'retard' %}
+              <span class="badge b-orange">⚠️ Retard</span>
+            {% elif op.statut_conformite == 'avance' %}
+              <span class="badge b-blue">⏩ Avance</span>
+            {% else %}
+              <span class="badge b-gray">{{ op.statut_conformite }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/chart/rame/{{ info.n_rame }}').then(r=>r.json()).then(d=>{
+  const colors = d.ecarts.map(v => v > 0 ? 'rgba(239,68,68,.75)' : 'rgba(34,197,94,.75)');
+  new Chart(document.getElementById('cRame'),{
+    type:'bar',
+    data:{labels:d.labels,datasets:[{label:'Écart début (h)',data:d.ecarts,backgroundColor:colors,borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:'Heures'},grid:{color:'#F1F5F9'}},
+              x:{ticks:{font:{size:9},maxTicksLimit:14},grid:{display:false}}}}
+  });
+});
+
+const ops = {{ ops|tojson }};
+const cnt = {conforme:0,non_conforme:0,retard:0,avance:0};
+ops.forEach(o=>{ if(cnt[o.statut_conformite]!==undefined) cnt[o.statut_conformite]++; });
+new Chart(document.getElementById('cStat'),{
+  type:'doughnut',
+  data:{
+    labels:['Conforme','Non conforme','Retard','Avance'],
+    datasets:[{data:[cnt.conforme,cnt.non_conforme,cnt.retard,cnt.avance],
+      backgroundColor:['#22C55E','#EF4444','#F59E0B','#3B82F6'],
+      borderWidth:3,borderColor:'#fff'}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:12},padding:14}}}}
+});
+</script>
+{% endblock %}

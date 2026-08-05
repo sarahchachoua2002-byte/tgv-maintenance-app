@@ -1,0 +1,39 @@
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environnement virtuel
+venv/
+.venv/
+env/
+
+# Variables d'environnement (clé API Groq — ne jamais publier)
+.env
+
+# Logs Flask locaux
+flask_err.txt
+flask_out.txt
+
+# Fichiers de debug (scripts temporaires)
+debug_*.py
+
+# Ancienne version de l'app
+app_step1.py
+
+# Anciens templates (versions v2 remplacées)
+templates/*_v2.html
+
+# Données brutes SNCF (confidentielles — fichiers Excel sources)
+../dataProgone_S1-S12.xlsx
+../data_S1_S12\ réalisation.xlsx
+
+# Backup notebook
+../*.bak
+
+# Configuration locale IDE
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
