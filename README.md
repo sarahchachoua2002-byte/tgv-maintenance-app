@@ -6,6 +6,44 @@ développée dans le cadre d'un projet d'alternance à la STF (Supervision Techn
 
 ---
 
+## URL publique
+
+**Application en ligne** : https://tgv-maintenance-app.onrender.com
+
+**Dépôt Git** : https://github.com/sarahchachoua2002-byte/tgv-maintenance-app
+
+---
+
+## Identifiants de connexion
+
+| Identifiant | Mot de passe | Rôle |
+|---|---|---|
+| `user` | `user` | Programmeur |
+
+> Aucun compte administrateur back-office n'est requis — l'application est mono-profil.
+
+---
+
+## Base de données
+
+Cette application n'utilise pas de base de données SQL.
+Les données sont stockées sous forme de fichiers sérialisés (`.pkl`, `.parquet`, `.json`)
+dans le répertoire `data_export/`, exportés depuis le notebook d'analyse.
+
+> Il n'y a donc pas de fichier SQL dump à fournir.
+
+---
+
+## Compatibilité navigateurs
+
+Testée et validée sur :
+- Google Chrome (recommandé)
+- Microsoft Edge
+- Mozilla Firefox
+- Opera
+
+---
+
 ## Prérequis
 
 - Python 3.10+
@@ -13,7 +51,7 @@ développée dans le cadre d'un projet d'alternance à la STF (Supervision Techn
 
 ---
 
-## Installation
+## Installation en local
 
 ```bash
 # 1. Cloner ou dézipper le projet
@@ -26,38 +64,24 @@ source venv/bin/activate     # Linux / Mac
 
 # 3. Installer les dépendances
 pip install -r requirements.txt
+
+# 4. Lancer l'application
+python app.py
 ```
+
+L'application démarre sur : http://127.0.0.1:5000
 
 ---
 
-## Configuration
+## Configuration (optionnelle)
 
-Créer un fichier `.env` ou définir la variable d'environnement suivante :
+Définir la variable d'environnement suivante pour activer le chatbot :
 
 ```
 GROQ_API_KEY=votre_cle_groq
 ```
 
-> La clé Groq est nécessaire uniquement pour le chatbot.
-> Sans cette clé, toutes les autres fonctionnalités de l'application restent disponibles.
-
----
-
-## Lancement en local
-
-```bash
-python app.py
-```
-
-L'application est accessible en ligne : https://tgv-maintenance-app.onrender.com
-
----
-
-## Identifiants de connexion
-
-| Identifiant | Mot de passe | Rôle |
-|---|---|---|
-| `user` | `user` | Programmeur |
+> Sans cette clé, toutes les autres fonctionnalités restent disponibles.
 
 ---
 
@@ -69,6 +93,7 @@ web_app/
 ├── data_loader.py          # Chargement et traitement des données
 ├── chatbot.py              # Module chatbot (API Groq)
 ├── requirements.txt        # Dépendances Python
+├── Procfile                # Configuration déploiement Render (gunicorn)
 ├── data_export/            # Données et modèles exportés depuis le notebook
 │   ├── clf.pkl             # Modèle XGBoost calibré
 │   ├── base_clf.pkl        # Modèle XGBoost de base
@@ -85,11 +110,11 @@ web_app/
 
 ## Fonctionnalités
 
-- **Dashboard** : KPIs globaux, alertes non-conformités
-- **Parc** : liste et détail des rames TGV
-- **Planning** : calendrier des interventions (FullCalendar)
+- **Tableau de bord** : KPIs globaux, alertes non-conformités
+- **Parc de rames** : liste et détail des rames TGV
+- **Planning** : calendrier des interventions
 - **Historique** : évolution mensuelle des écarts
-- **Prédiction** : probabilité de réalisation d'une opération (XGBoost)
+- **Prédiction IA** : probabilité de réalisation d'une opération (XGBoost)
 - **Chatbot** : assistant conversationnel connecté aux données réelles (Groq)
 
 ---
@@ -99,14 +124,5 @@ web_app/
 - `dataProgone_S1-S12.xlsx` — données de planification PROGONE (S1-S12 2026)
 - `data_S1_S12 réalisation.xlsx` — données de réalisation GMAO (S1-S12 2026)
 
-> Ces fichiers ne sont pas inclus dans le ZIP pour des raisons de confidentialité SNCF.
+> Ces fichiers ne sont pas inclus pour des raisons de confidentialité SNCF.
 > L'application fonctionne directement depuis les fichiers exportés (`data_export/`).
-
----
-
-## Déploiement sur Render
-
-1. Créer un compte sur [render.com](https://render.com)
-2. Nouveau Web Service → uploader le dossier `web_app/`
-3. **Start command** : `python app.py`
-4. Ajouter la variable d'environnement `GROQ_API_KEY` dans les paramètres Render
