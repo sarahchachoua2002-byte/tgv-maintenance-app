@@ -21,9 +21,6 @@ debug_*.py
 # Ancienne version de l'app
 app_step1.py
 
-# Anciens templates (versions v2 remplacées)
-templates/*_v2.html
-
 # Données brutes SNCF (confidentielles — fichiers Excel sources)
 ../dataProgone_S1-S12.xlsx
 ../data_S1_S12\ réalisation.xlsx

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}SNCF Maintenance TGV{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      background: #F4F6FA;
+      color: #1A202C;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: #0D1B2A;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+
+    .sb-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .sb-logo {
+      width: 38px; height: 38px;
+      background: #E30613;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .sb-brand-text { line-height: 1.2; }
+    .sb-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .sb-sub   { font-size: 11px; color: rgba(255,255,255,.35); }
+
+    /* Navigation */
+    .sb-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .sb-section { font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+                  text-transform: uppercase; color: rgba(255,255,255,.25);
+                  padding: 0 8px; margin: 16px 0 6px; }
+    .sb-section:first-child { margin-top: 0; }
+
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px;
+      color: rgba(255,255,255,.5);
+      text-decoration: none; font-size: 13px; font-weight: 500;
+      transition: background .15s, color .15s;
+      margin-bottom: 2px;
+    }
+    .nav-link:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.85); }
+    .nav-link.active { background: rgba(227,6,19,.2); color: #fff; }
+    .nav-link.active .nav-icon { color: #E30613; }
+    .nav-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* Badge sur les liens */
+    .nav-badge {
+      margin-left: auto; font-size: 10px; font-weight: 700;
+      background: #E30613; color: #fff;
+      padding: 2px 7px; border-radius: 99px;
+    }
+
+    /* Footer sidebar */
+    .sb-footer {
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sb-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #E30613;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .sb-user-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .sb-user-role { font-size: 11px; color: rgba(255,255,255,.35); }
+    .sb-logout {
+      margin-left: auto; color: rgba(255,255,255,.3);
+      text-decoration: none; font-size: 18px;
+      transition: color .15s;
+    }
+    .sb-logout:hover { color: #E30613; }
+
+    /* ── MAIN ── */
+    .main {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: 56px; flex-shrink: 0;
+      background: #fff;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 16px;
+    }
+    .topbar-title {
+      font-size: 16px; font-weight: 700; color: #1A202C;
+    }
+    .topbar-badge {
+      font-size: 11px; padding: 3px 10px; border-radius: 99px;
+      background: #FEF2F2; color: #E30613; font-weight: 600;
+      border: 1px solid #FECACA;
+    }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .topbar-sim {
+      font-size: 12px; color: #718096;
+      background: #F4F6FA; padding: 4px 12px;
+      border-radius: 99px; border: 1px solid #E2E8F0;
+    }
+
+    /* Contenu page */
+    .page {
+      flex: 1; overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* ── COMPOSANTS ── */
+
+    /* Grille */
+    .g-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .g-3  { flex: 3; min-width: 160px; }
+    .g-4  { flex: 4; min-width: 180px; }
+    .g-5  { flex: 5; min-width: 200px; }
+    .g-6  { flex: 6; min-width: 240px; }
+    .g-7  { flex: 7; min-width: 280px; }
+    .g-8  { flex: 8; min-width: 300px; }
+    .g-12 { flex: 12; min-width: 100%; }
+
+    /* Carte */
+    .card {
+      background: #fff; border-radius: 12px;
+      border: 1px solid #E2E8F0;
+    }
+    .card-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 18px; font-size: 13px; font-weight: 700;
+      color: #1A202C; border-bottom: 1px solid #F1F5F9;
+    }
+    .card-body { padding: 16px 18px; }
+
+    /* KPI card */
+    .kpi {
+      background: #fff; border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .kpi-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .kpi-icon.red  { background: #FFF0F0; }
+    .kpi-icon.blue { background: #EFF6FF; }
+    .kpi-icon.green{ background: #F0FDF4; }
+    .kpi-icon.orange{background: #FFFBEB; }
+    .kpi-val { font-size: 26px; font-weight: 800; line-height: 1; color: #1A202C; }
+    .kpi-lbl { font-size: 12px; color: #718096; margin-top: 4px; }
+    .kpi-sub { font-size: 11px; margin-top: 3px; }
+    .kpi-sub.up  { color: #E30613; }
+    .kpi-sub.ok  { color: #16A34A; }
+
+    /* Graphique */
+    .chart-box { position: relative; width: 100%; }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 9px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+    }
+    .b-green  { background: #F0FDF4; color: #15803D; }
+    .b-red    { background: #FEF2F2; color: #DC2626; }
+    .b-orange { background: #FFFBEB; color: #D97706; }
+    .b-blue   { background: #EFF6FF; color: #2563EB; }
+    .b-gray   { background: #F1F5F9; color: #475569; }
+
+    /* Table */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl th {
+      text-align: left; padding: 10px 14px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: #718096;
+      background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    }
+    .tbl td {
+      padding: 11px 14px; border-bottom: 1px solid #F1F5F9;
+      color: #1A202C;
+    }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tr:hover td { background: #F8FAFC; }
+
+    /* Barre de progression */
+    .pbar { height: 6px; background: #F1F5F9; border-radius: 99px; overflow: hidden; }
+    .pbar-fill { height: 100%; border-radius: 99px; }
+
+    /* Alerte */
+    .alert-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid #F1F5F9;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .alert-title { font-size: 13px; font-weight: 600; color: #1A202C; }
+    .alert-detail { font-size: 12px; color: #718096; margin-top: 2px; }
+
+    /* Boutons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; font-size: 13px;
+      font-weight: 600; cursor: pointer; text-decoration: none;
+      border: none; transition: .15s;
+    }
+    .btn-red   { background: #E30613; color: #fff; }
+    .btn-red:hover { background: #c10511; }
+    .btn-ghost {
+      background: transparent; color: #1A202C;
+      border: 1px solid #E2E8F0;
+    }
+    .btn-ghost:hover { background: #F4F6FA; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <img src="{{ url_for('static', filename='image/sncf_logo.png') }}"
+         alt="SNCF Voyageurs" style="width:48px;height:auto;flex-shrink:0;border-radius:6px">
+    <div class="sb-brand-text">
+      <div class="sb-title">SNCF Voyageurs</div>
+      <div class="sb-sub">Maintenance TGV</div>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-section">Principal</div>
+    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+      <span class="nav-icon">📊</span> Tableau de bord
+    </a>
+    <a href="{{ url_for('prediction') }}" class="nav-link {% if request.endpoint == 'prediction' %}active{% endif %}">
+      <span class="nav-icon">🤖</span> Prédiction IA
+    </a>
+    <a href="{{ url_for('parc') }}" class="nav-link {% if request.endpoint in ['parc', 'rame_detail'] %}active{% endif %}">
+      <span class="nav-icon">🚄</span> Parc de rames
+    </a>
+    <a href="{{ url_for('planning') }}" class="nav-link {% if request.endpoint == 'planning' %}active{% endif %}">
+      <span class="nav-icon">📅</span> Planning
+    </a>
+    <a href="{{ url_for('historique') }}" class="nav-link {% if request.endpoint == 'historique' %}active{% endif %}">
+      <span class="nav-icon">📈</span> Historique
+    </a>
+  </nav>
+
+  <div class="sb-footer">
+    <div class="sb-avatar">{{ session.user.nom[0] }}</div>
+    <div>
+      <div class="sb-user-name">{{ session.user.nom }}</div>
+      <div class="sb-user-role">{{ session.user.role }}</div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="sb-logout" title="Déconnexion">🚪</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+    <div class="topbar-right">
+      <span class="topbar-sim">📅 {% block sim_label %}{% endblock %}</span>
+    </div>
+  </header>
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- ── CHATBOT FLOTTANT ── -->
+<style>
+  #chat-btn {
+    position:fixed; bottom:24px; right:24px; z-index:1000;
+    width:52px; height:52px; border-radius:50%;
+    background:#E30613; color:#fff; border:none; cursor:pointer;
+    box-shadow:0 4px 16px rgba(227,6,19,.45);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; transition:transform .15s,box-shadow .15s;
+  }
+  #chat-btn:hover { transform:scale(1.08); box-shadow:0 6px 24px rgba(227,6,19,.55); }
+
+  #chat-panel {
+    position:fixed; bottom:88px; right:24px; z-index:1000;
+    width:360px; max-height:520px;
+    background:#fff; border-radius:16px;
+    border:1px solid #E2E8F0;
+    box-shadow:0 12px 40px rgba(0,0,0,.18);
+    display:none; flex-direction:column; overflow:hidden;
+  }
+  #chat-panel.open { display:flex; }
+
+  #chat-header {
+    background:#0D1B2A; color:#fff;
+    padding:14px 16px; font-size:13px; font-weight:700;
+    display:flex; align-items:center; gap:10px;
+    flex-shrink:0;
+  }
+  #chat-header span { flex:1; }
+  #chat-close {
+    background:none; border:none; color:rgba(255,255,255,.5);
+    cursor:pointer; font-size:18px; line-height:1;
+    padding:0; transition:color .15s;
+  }
+  #chat-close:hover { color:#fff; }
+
+  #chat-msgs {
+    flex:1; overflow-y:auto; padding:14px;
+    display:flex; flex-direction:column; gap:10px;
+    font-size:13px;
+  }
+
+  .msg-user {
+    align-self:flex-end;
+    background:#E30613; color:#fff;
+    padding:8px 12px; border-radius:12px 12px 2px 12px;
+    max-width:80%; line-height:1.5;
+  }
+  .msg-bot {
+    align-self:flex-start;
+    background:#F4F6FA; color:#1A202C;
+    padding:8px 12px; border-radius:12px 12px 12px 2px;
+    max-width:90%; line-height:1.7; white-space:pre-wrap;
+  }
+  .msg-bot strong { font-weight:700; }
+
+  #chat-suggestions {
+    padding:0 10px 8px; display:flex; flex-wrap:wrap; gap:6px;
+  }
+  .sug-btn {
+    font-size:11px; padding:4px 10px; border-radius:99px;
+    border:1px solid #E2E8F0; background:#F8FAFC;
+    color:#475569; cursor:pointer; transition:.12s;
+  }
+  .sug-btn:hover { border-color:#E30613; color:#E30613; }
+
+  #chat-input-row {
+    display:flex; gap:8px; padding:10px 12px;
+    border-top:1px solid #F1F5F9; flex-shrink:0;
+  }
+  #chat-input {
+    flex:1; border:1.5px solid #E2E8F0; border-radius:8px;
+    padding:8px 12px; font-size:13px; font-family:inherit;
+    outline:none; transition:border-color .15s;
+  }
+  #chat-input:focus { border-color:#E30613; }
+  #chat-send {
+    background:#E30613; color:#fff; border:none;
+    border-radius:8px; padding:8px 14px; cursor:pointer;
+    font-size:13px; font-weight:600; transition:.15s;
+  }
+  #chat-send:hover { background:#c10511; }
+
+  /* badge compteur */
+  #chat-badge {
+    position:absolute; top:-4px; right:-4px;
+    background:#fff; color:#E30613;
+    width:18px; height:18px; border-radius:50%;
+    font-size:10px; font-weight:800;
+    display:none; align-items:center; justify-content:center;
+    border:2px solid #E30613;
+  }
+</style>
+
+<!-- Bouton flottant -->
+<button id="chat-btn" title="Assistant Maintenance" style="position:fixed">
+  💬
+  <span id="chat-badge"></span>
+</button>
+
+<!-- Panneau chat -->
+<div id="chat-panel">
+  <div id="chat-header">
+    <span>🤖 Assistant Maintenance TGV</span>
+    <button id="chat-close">✕</button>
+  </div>
+  <div id="chat-msgs">
+    <div class="msg-bot">Bonjour 👋 Je peux répondre à tes questions sur les rames, les sites, le planning et les opérations. Tape <strong>aide</strong> pour voir les questions disponibles.</div>
+  </div>
+  <div id="chat-suggestions">
+    <button class="sug-btn">Quel site a le meilleur taux ?</button>
+    <button class="sug-btn">Rames à Bordeaux</button>
+    <button class="sug-btn">Taux réalisation MODULE</button>
+    <button class="sug-btn">Planning S5</button>
+    <button class="sug-btn">Quelle catégorie a le plus de retard ?</button>
+  </div>
+  <div id="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Pose ta question…" autocomplete="off"/>
+    <button id="chat-send">Envoyer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const btn   = document.getElementById('chat-btn');
+  const panel = document.getElementById('chat-panel');
+  const close = document.getElementById('chat-close');
+  const msgs  = document.getElementById('chat-msgs');
+  const input = document.getElementById('chat-input');
+  const send  = document.getElementById('chat-send');
+  const badge = document.getElementById('chat-badge');
+  let unread  = 0;
+  let history = [];  // mémoire de conversation
+
+  btn.addEventListener('click', () => {
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      unread = 0; badge.style.display = 'none'; input.focus();
+    }
+  });
+  close.addEventListener('click', () => panel.classList.remove('open'));
+
+  function renderMd(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+
+  function addMsg(text, who) {
+    const d = document.createElement('div');
+    d.className = who === 'user' ? 'msg-user' : 'msg-bot';
+    d.innerHTML = who === 'user' ? text : renderMd(text);
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+    if (who === 'bot' && !panel.classList.contains('open')) {
+      unread++;
+      badge.textContent = unread;
+      badge.style.display = 'flex';
+    }
+  }
+
+  function addTyping() {
+    const d = document.createElement('div');
+    d.className = 'msg-bot'; d.id = 'typing'; d.textContent = '…';
+    msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+    return d;
+  }
+
+  async function ask(question) {
+    if (!question.trim()) return;
+    addMsg(question, 'user');
+    input.value = '';
+    const t = addTyping();
+    try {
+      const r = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: question, history: history})
+      });
+      const data = await r.json();
+      t.remove();
+      const reply = data.reply || '…';
+      addMsg(reply, 'bot');
+      history.push({user: question, bot: reply});
+      if (history.length > 10) history = history.slice(-10);
+    } catch(e) {
+      t.remove();
+      addMsg('Erreur de connexion.', 'bot');
+    }
+  }
+
+  send.addEventListener('click', () => ask(input.value));
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(input.value); });
+
+  document.querySelectorAll('.sug-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      panel.classList.add('open');
+      ask(b.textContent);
+    });
+  });
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.color = '#718096';
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

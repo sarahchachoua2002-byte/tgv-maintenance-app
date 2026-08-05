@@ -1,0 +1,294 @@
+{% extends "base_v2.html" %}
+{% block title %}Prédiction IA — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Prédiction IA{% endblock %}
+{% block sim_label %}2 modèles actifs{% endblock %}
+
+{% block head %}
+<style>
+.model-card {
+  background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:18px;
+}
+.model-title {
+  font-size:13px; font-weight:700; color:#1A202C; margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.metric-row {
+  display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;
+}
+.metric-box {
+  flex:1; min-width:80px; background:#F8FAFC; border:1px solid #E2E8F0;
+  border-radius:8px; padding:10px 14px; text-align:center;
+}
+.metric-val { font-size:20px; font-weight:800; color:#1A202C; }
+.metric-lbl { font-size:10px; color:#718096; text-transform:uppercase;
+              letter-spacing:.5px; margin-top:3px; }
+.form-group { margin-bottom:14px; }
+.form-label { font-size:12px; font-weight:700; color:#718096;
+              text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:6px; }
+.form-select {
+  width:100%; padding:9px 12px; border:1.5px solid #E2E8F0; border-radius:8px;
+  font-size:13px; font-family:inherit; color:#1A202C; background:#F8FAFC;
+  appearance:none; -webkit-appearance:none; cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+}
+.form-select:focus { outline:none; border-color:#E30613; }
+.result-box {
+  background:#fff; border:2px solid #E30613; border-radius:12px; padding:20px;
+  margin-top:16px;
+}
+.result-title { font-size:14px; font-weight:700; color:#E30613; margin-bottom:16px; }
+.result-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.result-kpi {
+  flex:1; min-width:120px; background:#F8FAFC; border:1px solid #E2E8F0;
+  border-radius:8px; padding:12px 16px; text-align:center;
+}
+.result-val { font-size:24px; font-weight:800; }
+.result-lbl { font-size:11px; color:#718096; margin-top:4px; }
+.reco-box {
+  background:#FFF5F5; border:1px solid #FECACA; border-radius:8px;
+  padding:12px 16px; font-size:13px; color:#1A202C;
+}
+.gauge-wrap { position:relative; height:8px; background:#F1F5F9;
+              border-radius:99px; overflow:hidden; margin-top:6px; }
+.gauge-fill  { height:100%; border-radius:99px; transition:width .4s; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Modèle de classification -->
+<div class="g-row">
+  <div class="g-6">
+    <div class="model-card">
+      <div class="model-title">🎯 Modèle — Classification (réalisation probable ?)
+        <span class="badge b-green" style="margin-left:auto">XGBoost</span>
+      </div>
+      <div class="metric-row">
+        <div class="metric-box">
+          <div class="metric-val">{{ clf_metrics.accuracy }}%</div>
+          <div class="metric-lbl">Accuracy</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#718096;line-height:1.7">
+        Entraîné sur l'ensemble PROGONE S1–S12 (réalisées = 1, non réalisées = 0).<br>
+        <strong style="color:#1A202C">10 features :</strong>
+        catégorie, flotte, code opération, site, jour de la semaine, jour férié,
+        taux historique par catégorie, taux historique par code opération,
+        charge de la semaine, interaction catégorie × flotte.<br>
+        Calibration sigmoïde (CalibratedClassifierCV, cv=3) pour des probabilités fiables.
+      </div>
+      <div style="height:280px;margin-top:12px"><canvas id="chartClfImp"></canvas></div>
+    </div>
+  </div>
+  <div class="g-6">
+    <div class="model-card">
+      <div class="model-title">ℹ️ Interprétation du modèle</div>
+      <div style="font-size:12px;color:#718096;line-height:1.8;margin-top:8px">
+        Le modèle prédit la <strong>probabilité qu'une opération planifiée soit effectivement réalisée</strong>
+        en se basant sur l'historique S1–S12.<br><br>
+        <strong>Interprétation :</strong>
+        <ul style="margin:6px 0 0 16px">
+          <li>≥ 60% → réalisation probable ✅</li>
+          <li>40–60% → probabilité modérée, à surveiller ⚠️</li>
+          <li>20–40% → risque modéré ⚠️</li>
+          <li>&lt; 20% → risque élevé de non-réalisation ❌</li>
+        </ul>
+        <br>
+        L'écart affiché dans les résultats est la <strong>moyenne historique</strong>
+        des retards observés pour ce type d'opération.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Formulaire de prédiction -->
+<div class="g-row">
+  <div class="g-5">
+    <div class="card">
+      <div class="card-head">🔮 Simuler une prédiction</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('prediction') }}">
+          <!-- 1. Rame -->
+          <div class="form-group">
+            <label class="form-label">Rame</label>
+            <select id="selRame" name="rame" class="form-select" required onchange="onRameChange()">
+              <option value="">-- Choisir une rame --</option>
+              {% for r in all_rames %}
+              <option value="{{ r }}" {% if f_rame == r %}selected{% endif %}>{{ r }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- 2. Site (liste complète) -->
+          <div class="form-group">
+            <label class="form-label">Site</label>
+            <select id="selSite" name="site" class="form-select" onchange="onSiteChange()">
+              <option value="">-- Choisir un site --</option>
+              {% for s in all_sites %}
+              <option value="{{ s }}" {% if f_site == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- 3. Catégorie (dépend de la rame uniquement) -->
+          <div class="form-group" id="grpCat" style="display:{% if f_rame %}block{% else %}none{% endif %}">
+            <label class="form-label">Catégorie d'opération</label>
+            <select id="selCat" name="categorie" class="form-select" required onchange="onCatChange()">
+              <option value="">-- Choisir une catégorie --</option>
+              {% if f_categorie %}
+              <option value="{{ f_categorie }}" selected>{{ f_categorie }}</option>
+              {% endif %}
+            </select>
+          </div>
+          <!-- 4. Code op (dépend de rame + site + catégorie) -->
+          <div class="form-group" id="grpCodeOp" style="display:{% if f_categorie %}block{% else %}none{% endif %}">
+            <label class="form-label">Opération spécifique (optionnel)</label>
+            <select id="selCodeOp" name="code_op" class="form-select">
+              <option value="">-- Toutes les opérations --</option>
+              {% if f_code_op %}
+              <option value="{{ f_code_op }}" selected>{{ f_code_op }}</option>
+              {% endif %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-red" style="width:100%;justify-content:center;margin-top:8px">
+            Prédire →
+          </button>
+        </form>
+
+        {% if result %}
+        <div class="result-box">
+          <div class="result-title">Résultats — Rame {{ result.rame }} · {{ result.categorie }}</div>
+          <!-- Infos contextuelles -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            {% if result.code_op and result.code_op != '—' and result.libelle and result.libelle != '—' %}
+            <span style="font-size:11px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:6px;padding:3px 10px">
+              📋 {{ result.code_op }} — {{ result.libelle }}
+            </span>
+            {% elif result.code_op and result.code_op != '—' %}
+            <span style="font-size:11px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:6px;padding:3px 10px">
+              📋 {{ result.code_op }}
+            </span>
+            {% endif %}
+            {% if result.site and result.site != '—' %}
+            <span style="font-size:11px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;border-radius:6px;padding:3px 10px">
+              📍 {{ result.site }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="result-grid">
+            <div class="result-kpi">
+              <div class="result-val" style="color:{% if result.proba_realise >= 60 %}#16A34A{% elif result.proba_realise >= 40 %}#D97706{% else %}#DC2626{% endif %}">
+                {{ result.proba_realise }}%
+              </div>
+              <div class="result-lbl">Prob. réalisation (IA)</div>
+              <div class="gauge-wrap">
+                <div class="gauge-fill" style="width:{{ result.proba_realise }}%;background:{% if result.proba_realise >= 60 %}#16A34A{% elif result.proba_realise >= 40 %}#F59E0B{% else %}#DC2626{% endif %}"></div>
+              </div>
+            </div>
+          </div>
+          <div class="reco-box">{{ result.recommandation }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const clfImp = {{ clf_imp_json | safe }};
+
+new Chart(document.getElementById('chartClfImp'), {
+  type: 'bar',
+  data: {
+    labels: clfImp.labels,
+    datasets: [{ label: 'Importance (%)', data: clfImp.values,
+      backgroundColor: 'rgba(22,163,74,.75)', borderRadius:4, borderWidth:0 }]
+  },
+  options: {
+    indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{color:'#F1F5F9'}, ticks:{callback:v=>v+'%'} },
+      y:{ grid:{display:false} }
+    }
+  }
+});
+
+const selRame   = document.getElementById('selRame');
+const selSite   = document.getElementById('selSite');
+const selCat    = document.getElementById('selCat');
+const selCodeOp = document.getElementById('selCodeOp');
+const grpCat    = document.getElementById('grpCat');
+const grpCodeOp = document.getElementById('grpCodeOp');
+
+function resetSelect(sel, placeholder) {
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+}
+
+function onRameChange() {
+  resetSelect(selCat, '-- Choisir une catégorie --');
+  resetSelect(selCodeOp, '-- Toutes les opérations --');
+  grpCat.style.display = 'none';
+  grpCodeOp.style.display = 'none';
+  const rame = selRame.value;
+  if (!rame) return;
+  fetch(`/api/categories_rame_site?rame=${encodeURIComponent(rame)}&site=`)
+    .then(r => r.json())
+    .then(cats => {
+      resetSelect(selCat, '-- Choisir une catégorie --');
+      cats.forEach(c => selCat.appendChild(new Option(c, c)));
+      grpCat.style.display = cats.length > 0 ? 'block' : 'none';
+    });
+}
+
+function onSiteChange() {
+  // Le site ne recharge pas les catégories — il est utilisé uniquement comme feature IA
+}
+
+function onCatChange() {
+  const rame = selRame.value;
+  const cat  = selCat.value;
+  resetSelect(selCodeOp, '-- Toutes les opérations --');
+  grpCodeOp.style.display = 'none';
+  if (!cat) return;
+  fetch(`/api/operations_cat?categorie=${encodeURIComponent(cat)}`)
+    .then(r => r.json())
+    .then(ops => {
+      ops.forEach(op => {
+        const label = op.libelle && op.libelle !== op.code ? `${op.code} — ${op.libelle}` : op.code;
+        selCodeOp.appendChild(new Option(label, op.code));
+      });
+      grpCodeOp.style.display = ops.length > 0 ? 'block' : 'none';
+    });
+}
+
+// Restaurer l'état après un POST
+const initRame = '{{ f_rame }}';
+const initSite = '{{ f_site }}';
+const initCat  = '{{ f_categorie }}';
+const initCode = '{{ f_code_op }}';
+
+if (initRame) {
+  fetch(`/api/categories_rame_site?rame=${encodeURIComponent(initRame)}&site=`)
+    .then(r => r.json())
+    .then(cats => {
+      cats.forEach(c => selCat.appendChild(new Option(c, c, c === initCat, c === initCat)));
+      grpCat.style.display = cats.length > 0 ? 'block' : 'none';
+      if (initCat) return fetch(`/api/operations_cat?categorie=${encodeURIComponent(initCat)}`);
+    })
+    .then(r => r && r.json())
+    .then(ops => {
+      if (!ops) return;
+      ops.forEach(op => {
+        const label = op.libelle && op.libelle !== op.code ? `${op.code} — ${op.libelle}` : op.code;
+        const sel = op.code === initCode;
+        selCodeOp.appendChild(new Option(label, op.code, sel, sel));
+      });
+      grpCodeOp.style.display = ops.length > 0 ? 'block' : 'none';
+    });
+}
+</script>
+{% endblock %}

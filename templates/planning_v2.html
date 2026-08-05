@@ -1,0 +1,249 @@
+{% extends "base_v2.html" %}
+{% block title %}Planning — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Planning S1–S12{% endblock %}
+{% block sim_label %}Taux de réalisation : {{ taux_realisation }}%{% endblock %}
+
+{% block content %}
+
+<!-- KPIs -->
+<div class="g-row">
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon blue">📅</div>
+      <div>
+        <div class="kpi-val">{{ nb_planifie }}</div>
+        <div class="kpi-lbl">Opérations planifiées</div>
+        <div class="kpi-sub">PROGONE S1–S12</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon green">✅</div>
+      <div>
+        <div class="kpi-val">{{ nb_realise }}</div>
+        <div class="kpi-lbl">Réalisées</div>
+        <div class="kpi-sub ok">matchées dans RÉALISATION</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon red">❌</div>
+      <div>
+        <div class="kpi-val">{{ nb_non_realise }}</div>
+        <div class="kpi-lbl">Non réalisées</div>
+        <div class="kpi-sub up">sans correspondance</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon {% if taux_realisation >= 80 %}green{% elif taux_realisation >= 60 %}orange{% else %}red{% endif %}">📊</div>
+      <div>
+        <div class="kpi-val">{{ taux_realisation }}%</div>
+        <div class="kpi-lbl">Taux de réalisation</div>
+        <div class="kpi-sub {% if taux_realisation >= 80 %}ok{% else %}up{% endif %}">
+          {% if taux_realisation >= 80 %}bon niveau{% else %}à améliorer{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphiques -->
+<div class="g-row">
+  <div class="g-8">
+    <div class="card">
+      <div class="card-head">📈 Planifiées vs Réalisées par semaine</div>
+      <div class="card-body">
+        <div style="height:260px"><canvas id="chartSem"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="card">
+      <div class="card-head">📊 Taux de réalisation par catégorie</div>
+      <div class="card-body">
+        <div style="height:260px"><canvas id="chartCat"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tableau opérations non réalisées -->
+<div class="card">
+  <div class="card-head">
+    ❌ Opérations planifiées non réalisées
+    <span class="nav-badge" style="margin-left:8px" id="planCount">{{ nb_non_realise }}</span>
+    <span style="margin-left:auto;font-size:11px;font-weight:400;color:#A0AEC0">
+      Entrées PROGONE sans correspondance dans RÉALISATION
+    </span>
+  </div>
+  <!-- Filtres -->
+  <div style="display:flex;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border);background:#fff;flex-wrap:wrap;gap:0">
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#3B82F6;letter-spacing:.04em;padding-right:16px;border-right:1px solid #E2E8F0">
+      <i class="bi bi-search" style="font-size:13px"></i> FILTRER
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid #E2E8F0">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">SEMAINE</span>
+      <select id="pfSem" onchange="filterPlan()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;color:#1A202C;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 8px center;appearance:none;outline:none;cursor:pointer">
+        <option value="">Toutes (S1–S12)</option>
+        {% for op in ops_nr %}<option value="S{{ op.semaine }}">S{{ op.semaine }}</option>{% endfor %}
+      </select>
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid #E2E8F0">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">CATÉGORIE</span>
+      <select id="pfCat" onchange="filterPlan()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;color:#1A202C;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 8px center;appearance:none;outline:none;cursor:pointer">
+        <option value="">Toutes catégories</option>
+        {% for op in ops_nr %}<option value="{{ op.categorie }}">{{ op.categorie }}</option>{% endfor %}
+      </select>
+    </span>
+    <span style="display:flex;align-items:center;gap:8px;padding:0 16px">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">RAME</span>
+      <input type="text" id="pfRame" placeholder="N° rame…" oninput="filterPlan()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 10px;font-size:12px;color:#1A202C;outline:none;width:110px"/>
+    </span>
+    <button onclick="resetPlan()" style="margin-left:auto;background:none;border:none;font-size:12px;color:#A0AEC0;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px" onmouseover="this.style.color='#E30613'" onmouseout="this.style.color='#A0AEC0'">
+      <i class="bi bi-x-circle"></i> Réinitialiser
+    </button>
+  </div>
+  <div class="card-body" style="padding:0">
+    {% if ops_nr %}
+    <table class="tbl" id="tPlan">
+      <thead>
+        <tr>
+          <th>Rame</th>
+          <th>Code op.</th>
+          <th>Catégorie</th>
+          <th>Semaine planifiée</th>
+          <th>Date planifiée</th>
+          <th>Date butée</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in ops_nr %}
+        <tr class="prow" data-sem="S{{ op.semaine }}" data-cat="{{ op.categorie }}" data-rame="{{ op.n_rame }}">
+          <td><a href="{{ url_for('rame_detail', n_rame=op.n_rame) }}" style="font-weight:700;color:#1A202C;text-decoration:none">{{ op.n_rame }}</a></td>
+          <td style="color:#718096;font-size:12px">{{ op.code_op }}</td>
+          <td><span class="badge b-blue">{{ op.categorie }}</span></td>
+          <td>S{{ op.semaine }}</td>
+          <td style="color:#718096">{{ op.debut_planifie }}</td>
+          <td style="color:{% if op.date_butee != '—' %}#DC2626{% else %}#A0AEC0{% endif %}">
+            {{ op.date_butee }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:#A0AEC0;font-size:13px">
+      <div style="font-size:32px;margin-bottom:8px">✅</div>
+      Toutes les opérations planifiées ont été réalisées.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dédupliquer options semaine et catégorie
+['pfSem','pfCat'].forEach(id=>{
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const seen = new Set(); const keep = [sel.options[0]];
+  for(let i=1;i<sel.options.length;i++){
+    if(!seen.has(sel.options[i].value)){ seen.add(sel.options[i].value); keep.push(sel.options[i]); }
+  }
+  sel.innerHTML=''; keep.forEach(o=>sel.appendChild(o));
+});
+
+function filterPlan(){
+  const sem    = document.getElementById('pfSem').value;
+  const cat    = document.getElementById('pfCat').value;
+  const rame   = document.getElementById('pfRame').value.trim().toLowerCase();
+  const rows   = document.querySelectorAll('#tPlan .prow');
+  let n = 0;
+  rows.forEach(r=>{
+    const show = (!sem||r.dataset.sem===sem) && (!cat||r.dataset.cat===cat) && (!rame||String(r.dataset.rame).toLowerCase().includes(rame));
+    r.style.display = show ? '' : 'none';
+    if(show) n++;
+  });
+  document.getElementById('planCount').textContent = n;
+}
+function resetPlan(){
+  ['pfSem','pfCat'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pfRame').value='';
+  filterPlan();
+}
+
+const sem = {{ sem_json | safe }};
+const cat = {{ cat_json | safe }};
+
+// Planifiées vs Réalisées par semaine (barres empilées)
+new Chart(document.getElementById('chartSem'), {
+  type: 'bar',
+  data: {
+    labels: sem.labels,
+    datasets: [
+      {
+        label: 'Réalisées',
+        data: sem.realise,
+        backgroundColor: 'rgba(22,163,74,.8)',
+        borderRadius: 4, borderWidth: 0,
+      },
+      {
+        label: 'Non réalisées',
+        data: sem.non_realise,
+        backgroundColor: 'rgba(220,38,38,.7)',
+        borderRadius: 4, borderWidth: 0,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: {
+        callbacks: {
+          afterBody: ctx => {
+            const i = ctx[0].dataIndex;
+            return `Taux de réalisation : ${sem.taux[i]}%`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 5 } }
+    }
+  }
+});
+
+// Taux de réalisation par catégorie (barres horizontales)
+new Chart(document.getElementById('chartCat'), {
+  type: 'bar',
+  data: {
+    labels: cat.labels,
+    datasets: [{
+      label: 'Taux de réalisation (%)',
+      data: cat.taux,
+      backgroundColor: cat.taux.map(v =>
+        v >= 80 ? 'rgba(22,163,74,.8)' : v >= 60 ? 'rgba(245,158,11,.8)' : 'rgba(220,38,38,.8)'
+      ),
+      borderRadius: 4, borderWidth: 0,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#F1F5F9' }, min: 0, max: 100, ticks: { callback: v => v + '%' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base_v2.html" %}
+{% block title %}Historique — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Historique des opérations{% endblock %}
+{% block sim_label %}{{ nb_fiable }} opérations analysées{% endblock %}
+
+{% block content %}
+
+<!-- Graphiques -->
+<div class="g-row">
+  <div class="g-8">
+    <div class="card">
+      <div class="card-head">📈 Écart moyen de début par semaine</div>
+      <div class="card-body">
+        <div style="height:240px"><canvas id="chartEcart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-4">
+    <div class="card">
+      <div class="card-head">📊 Taux de retard par semaine</div>
+      <div class="card-body">
+        <div style="height:240px"><canvas id="chartRetard"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-head">
+    🕐 Opérations réalisées
+    <span id="histCount" style="margin-left:8px;font-size:12px;color:#A0AEC0"></span>
+  </div>
+  <!-- Filtres -->
+  <div style="display:flex;align-items:center;gap:0;padding:12px 20px;border-bottom:1px solid var(--border);background:#fff;flex-wrap:wrap;gap:0">
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#3B82F6;letter-spacing:.04em;padding-right:16px;border-right:1px solid #E2E8F0">
+      <i class="bi bi-search" style="font-size:13px"></i> FILTRER
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid #E2E8F0">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">SEMAINE</span>
+      <select id="hfSem" onchange="filterHist()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;color:#1A202C;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 8px center;appearance:none;outline:none;cursor:pointer">
+        <option value="">Toutes semaines</option>
+        {% for op in ops_fiables %}<option value="S{{ op.semaine }}">S{{ op.semaine }}</option>{% endfor %}
+      </select>
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid #E2E8F0">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">CATÉGORIE</span>
+      <select id="hfCat" onchange="filterHist()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;color:#1A202C;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 8px center;appearance:none;outline:none;cursor:pointer">
+        <option value="">Toutes catégories</option>
+        {% for op in ops_fiables %}<option value="{{ op.categorie }}">{{ op.categorie }}</option>{% endfor %}
+      </select>
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;padding:0 16px">
+      <span style="font-size:11px;font-weight:700;color:#1A202C;letter-spacing:.06em">STATUT</span>
+      <select id="hfStatut" onchange="filterHist()" style="border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;color:#1A202C;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 8px center;appearance:none;outline:none;cursor:pointer">
+        <option value="">Tous statuts</option>
+        <option value="non_conforme">Non conforme</option>
+        <option value="retard">Retard</option>
+        <option value="avance">En avance</option>
+        <option value="conforme">Conforme</option>
+      </select>
+    </span>
+    <button onclick="resetHist()" style="margin-left:auto;background:none;border:none;font-size:12px;color:#A0AEC0;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px" onmouseover="this.style.color='#E30613'" onmouseout="this.style.color='#A0AEC0'">
+      <i class="bi bi-x-circle"></i> Réinitialiser
+    </button>
+  </div>
+  <div class="card-body" style="padding:0">
+    <table class="tbl" id="tHist">
+      <thead>
+        <tr>
+          <th>Rame</th><th>Code op.</th><th>Catégorie</th>
+          <th>Semaine</th><th>Réalisé le</th>
+          <th>Écart début</th><th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in ops_fiables %}
+        <tr class="hrow" data-sem="S{{ op.semaine }}" data-cat="{{ op.categorie }}" data-statut="{{ op.statut }}">
+          <td><strong>{{ op.n_rame }}</strong></td>
+          <td style="color:#718096;font-size:12px">{{ op.code_op }}</td>
+          <td><span class="badge b-blue">{{ op.categorie }}</span></td>
+          <td>S{{ op.semaine }}</td>
+          <td style="color:#718096">{{ op.debut_reel }}</td>
+          <td>
+            <span style="font-weight:700;color:{% if op.ecart_debut > 0 %}#DC2626{% elif op.ecart_debut < 0 %}#16A34A{% else %}#718096{% endif %}">
+              {% if op.ecart_debut > 0 %}+{% endif %}{{ op.ecart_debut }}h
+            </span>
+          </td>
+          <td>
+            {% if op.statut == 'non_conforme' %}<span class="badge b-red">Non conforme</span>
+            {% elif op.statut == 'retard' %}<span class="badge b-orange">Retard</span>
+            {% elif op.statut == 'avance' %}<span class="badge b-green">En avance</span>
+            {% else %}<span class="badge b-gray">Conforme</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dédupliquer les options des selects
+['hfSem','hfCat'].forEach(id=>{
+  const sel = document.getElementById(id);
+  const seen = new Set(); const keep = [sel.options[0]];
+  for(let i=1;i<sel.options.length;i++){
+    if(!seen.has(sel.options[i].value)){ seen.add(sel.options[i].value); keep.push(sel.options[i]); }
+  }
+  sel.innerHTML=''; keep.forEach(o=>sel.appendChild(o));
+});
+
+function filterHist(){
+  const sem    = document.getElementById('hfSem').value;
+  const cat    = document.getElementById('hfCat').value;
+  const statut = document.getElementById('hfStatut').value;
+  const rows   = document.querySelectorAll('#tHist .hrow');
+  let n = 0;
+  rows.forEach(r=>{
+    const show = (!sem||r.dataset.sem===sem) && (!cat||r.dataset.cat===cat) && (!statut||r.dataset.statut===statut);
+    r.style.display = show ? '' : 'none';
+    if(show) n++;
+  });
+  document.getElementById('histCount').textContent = n + ' opération(s)';
+}
+function resetHist(){
+  ['hfSem','hfCat','hfStatut'].forEach(id=>document.getElementById(id).value='');
+  filterHist();
+}
+filterHist();
+
+const h = {{ histo_json | safe }};
+
+new Chart(document.getElementById('chartEcart'), {
+  type: 'bar',
+  data: {
+    labels: h.labels,
+    datasets: [{
+      label: 'Écart moyen début (h)',
+      data: h.ecart_moy,
+      backgroundColor: h.ecart_moy.map(v => v > 0 ? 'rgba(220,38,38,.75)' : 'rgba(22,163,74,.75)'),
+      borderRadius: 5, borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, ticks:{callback: v => v+'h'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartRetard'), {
+  type: 'line',
+  data: {
+    labels: h.labels,
+    datasets: [{
+      label: 'Taux de retard (%)',
+      data: h.taux_retard,
+      borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,.08)',
+      borderWidth: 2, tension: .4, fill: true,
+      pointBackgroundColor: '#F59E0B', pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:'#F1F5F9'}, min:0, max:100, ticks:{callback: v => v+'%'} }
+    }
+  }
+});
+</script>
+{% endblock %}

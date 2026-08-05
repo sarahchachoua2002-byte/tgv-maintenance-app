@@ -1,0 +1,177 @@
+{% extends "base_v2.html" %}
+{% block title %}Rame {{ n_rame }} — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Rame {{ n_rame }}{% endblock %}
+{% block sim_label %}Flotte {{ flotte }}{% endblock %}
+
+{% block content %}
+
+<!-- Retour -->
+<div style="margin-bottom:16px">
+  <a href="{{ url_for('parc') }}" class="btn btn-ghost btn-sm">← Retour au parc</a>
+</div>
+
+<!-- KPIs rame -->
+<div class="g-row">
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon blue">🚄</div>
+      <div>
+        <div class="kpi-val">{{ n_rame }}</div>
+        <div class="kpi-lbl">Numéro de rame</div>
+        <div class="kpi-sub">Flotte {{ flotte }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon red">🔧</div>
+      <div>
+        <div class="kpi-val">{{ nb_ops }}</div>
+        <div class="kpi-lbl">Opérations S1–S12</div>
+        <div class="kpi-sub">Période A analysée</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon {% if ecart_moy > 0 %}red{% else %}green{% endif %}">⏱</div>
+      <div>
+        <div class="kpi-val">{% if ecart_moy > 0 %}+{% endif %}{{ ecart_moy }}h</div>
+        <div class="kpi-lbl">Écart moyen</div>
+        <div class="kpi-sub {% if ecart_moy > 0 %}up{% else %}ok{% endif %}">
+          {% if ecart_moy > 0 %}retard moyen{% else %}en avance{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon orange">📉</div>
+      <div>
+        <div class="kpi-val">{{ taux_retard }}%</div>
+        <div class="kpi-lbl">Taux de retard</div>
+        <div class="kpi-sub {% if taux_retard > 50 %}up{% else %}ok{% endif %}">
+          {% if taux_retard > 50 %}à surveiller{% else %}acceptable{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphiques -->
+<div class="g-row">
+  <div class="g-6">
+    <div class="card">
+      <div class="card-head">📈 Évolution de l'écart par semaine</div>
+      <div class="card-body">
+        <div style="height:220px"><canvas id="chartSem"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="g-6">
+    <div class="card">
+      <div class="card-head">📊 Répartition par catégorie</div>
+      <div class="card-body">
+        <div style="height:220px"><canvas id="chartCats"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historique opérations -->
+<div class="card">
+  <div class="card-head">🕐 Toutes les opérations</div>
+  <div class="card-body" style="padding:0">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Code op.</th>
+          <th>Catégorie</th>
+          <th>Semaine</th>
+          <th>Réalisé le</th>
+          <th>Écart début</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in ops %}
+        <tr>
+          <td style="color:#718096;font-size:12px">{{ op.code_op }}</td>
+          <td><span class="badge b-blue">{{ op.categorie }}</span></td>
+          <td>S{{ op.semaine }}</td>
+          <td style="color:#718096;font-size:12px">{{ op.debut_reel }}</td>
+          <td>
+            <span style="font-weight:700;color:{% if op.ecart_debut > 0 %}#DC2626{% elif op.ecart_debut < 0 %}#16A34A{% else %}#718096{% endif %}">
+              {% if op.ecart_debut > 0 %}+{% endif %}{{ op.ecart_debut }}h
+            </span>
+          </td>
+          <td>
+            {% if op.ecart_debut > 48 %}<span class="badge b-red">Critique</span>
+            {% elif op.ecart_debut > 0 %}<span class="badge b-orange">Retard</span>
+            {% elif op.ecart_debut < 0 %}<span class="badge b-green">En avance</span>
+            {% else %}<span class="badge b-gray">Conforme</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sem  = {{ sem_json | safe }};
+const cats = {{ cats_json | safe }};
+
+new Chart(document.getElementById('chartSem'), {
+  type: 'line',
+  data: {
+    labels: sem.labels,
+    datasets: [{
+      label: 'Écart moyen (h)',
+      data: sem.ecart,
+      borderColor: '#E30613',
+      backgroundColor: 'rgba(227,6,19,.08)',
+      borderWidth: 2, tension: .4, fill: true,
+      pointBackgroundColor: '#E30613', pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#F1F5F9' }, ticks: { callback: v => v + 'h' } }
+    }
+  }
+});
+
+const PALETTE = [
+  '#E30613','#2563EB','#F59E0B','#16A34A','#8B5CF6','#EC4899',
+  '#0891B2','#EA580C','#65A30D','#7C3AED'
+];
+
+new Chart(document.getElementById('chartCats'), {
+  type: 'bar',
+  data: {
+    labels: cats.labels,
+    datasets: [{
+      label: 'Nb opérations',
+      data: cats.nb,
+      backgroundColor: cats.labels.map((_, i) => PALETTE[i % PALETTE.length]),
+      borderRadius: 5, borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#F1F5F9' }, ticks: { stepSize: 1 } }
+    }
+  }
+});
+</script>
+{% endblock %}

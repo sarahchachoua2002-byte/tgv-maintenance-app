@@ -1,0 +1,123 @@
+{% extends "base_v2.html" %}
+{% block title %}Parc de rames — SNCF Maintenance TGV{% endblock %}
+{% block page_title %}Parc de rames{% endblock %}
+{% block sim_label %}{{ nb_rames }} rames · {{ nb_flottes }} flottes{% endblock %}
+
+{% block head %}
+<style>
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+    padding: 10px 16px; margin-bottom: 16px;
+  }
+  .search-input {
+    border: 1.5px solid #E2E8F0; border-radius: 8px;
+    padding: 7px 12px; font-size: 13px; font-family: inherit;
+    color: #1A202C; background: #F8FAFC; width: 240px;
+    transition: border-color .15s;
+  }
+  .search-input:focus { outline: none; border-color: #E30613; }
+  .rame-link { color: #1A202C; text-decoration: none; font-weight: 700; }
+  .rame-link:hover { color: #E30613; }
+  .mini-bar { height: 4px; background: #F1F5F9; border-radius: 99px; overflow: hidden; margin-top: 4px; width: 80px; }
+  .mini-fill { height: 100%; border-radius: 99px; background: #E30613; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- KPIs -->
+<div class="g-row">
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon blue">🚄</div>
+      <div>
+        <div class="kpi-val">{{ nb_rames }}</div>
+        <div class="kpi-lbl">Rames dans le parc</div>
+        <div class="kpi-sub">S1–S12 période A</div>
+      </div>
+    </div>
+  </div>
+  <div class="g-3">
+    <div class="kpi">
+      <div class="kpi-icon orange">🏭</div>
+      <div>
+        <div class="kpi-val">{{ nb_flottes }}</div>
+        <div class="kpi-lbl">Flottes distinctes</div>
+        <div class="kpi-sub">Types de matériel</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barre de recherche -->
+<div class="search-bar">
+  <span style="font-size:12px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.5px">🔍 Recherche</span>
+  <input type="text" id="searchInput" class="search-input" placeholder="Numéro de rame..." oninput="filterTable()">
+  <span style="font-size:12px;color:#A0AEC0" id="countLabel">{{ nb_rames }} rames</span>
+</div>
+
+<!-- Tableau rames -->
+<div class="card">
+  <div class="card-head">📋 Liste des rames</div>
+  <div class="card-body" style="padding:0">
+    <table class="tbl" id="rameTable">
+      <thead>
+        <tr>
+          <th>N° Rame</th>
+          <th>Flotte</th>
+          <th>Nb opérations</th>
+          <th>Écart moyen</th>
+          <th>Taux de retard</th>
+          <th>Dernière op.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rames %}
+        <tr class="rame-row">
+          <td><a href="{{ url_for('rame_detail', n_rame=r.n_rame) }}" class="rame-link">{{ r.n_rame }}</a></td>
+          <td><span class="badge b-blue">{{ r.flotte }}</span></td>
+          <td><strong>{{ r.nb_ops }}</strong></td>
+          <td>
+            <span style="font-weight:700;color:{% if r.ecart_moy > 0 %}#DC2626{% elif r.ecart_moy < 0 %}#16A34A{% else %}#718096{% endif %}">
+              {% if r.ecart_moy > 0 %}+{% endif %}{{ r.ecart_moy }}h
+            </span>
+          </td>
+          <td>
+            <span style="font-size:12px;font-weight:600;color:{% if r.taux_retard > 70 %}#DC2626{% elif r.taux_retard > 40 %}#D97706{% else %}#16A34A{% endif %}">
+              {{ r.taux_retard }}%
+            </span>
+            <div class="mini-bar">
+              <div class="mini-fill" style="width:{{ r.taux_retard }}%;background:{% if r.taux_retard > 70 %}#DC2626{% elif r.taux_retard > 40 %}#F59E0B{% else %}#16A34A{% endif %}"></div>
+            </div>
+          </td>
+          <td style="color:#718096;font-size:12px">{{ r.derniere_op }}</td>
+          <td>
+            <a href="{{ url_for('rame_detail', n_rame=r.n_rame) }}" class="btn btn-ghost btn-sm">Détail →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('.rame-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const rame = row.cells[0].textContent.toLowerCase();
+    const show = rame.includes(q);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('countLabel').textContent = visible + ' rame' + (visible > 1 ? 's' : '');
+}
+</script>
+{% endblock %}
