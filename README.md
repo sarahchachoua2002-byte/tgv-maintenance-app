@@ -12,6 +12,10 @@ développée dans le cadre d'un projet d'alternance à la STF (Supervision Techn
 
 **Dépôt Git** : https://github.com/sarahchachoua2002-byte/tgv-maintenance-app
 
+> Note : l'application est hébergée sur le plan gratuit de Render. Elle se met en veille après
+> 15 minutes d'inactivité. Le premier accès après une période d'inactivité peut prendre
+> 1 à 2 minutes le temps que le serveur se réveille. Ce comportement est normal.
+
 ---
 
 ## Identifiants de connexion
