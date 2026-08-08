@@ -128,5 +128,9 @@ web_app/
 - `dataProgone_S1-S12.xlsx` — données de planification PROGONE (S1-S12 2026)
 - `data_S1_S12 réalisation.xlsx` — données de réalisation GMAO (S1-S12 2026)
 
-> Ces fichiers ne sont pas inclus pour des raisons de confidentialité SNCF.
-> L'application fonctionne directement depuis les fichiers exportés (`data_export/`).
+> Ces fichiers ne sont pas inclus dans ce dépôt Git pour des raisons de confidentialité SNCF Voyageurs.
+> Ils sont fournis séparément dans le ZIP du livrable académique.
+> L'application web fonctionne directement depuis les fichiers exportés (`data_export/`)
+> et ne nécessite pas les fichiers Excel pour être déployée ou testée.
+> Pour exécuter le notebook d'analyse complet, les fichiers Excel sources sont nécessaires
+> et disponibles dans le ZIP remis à l'école.
