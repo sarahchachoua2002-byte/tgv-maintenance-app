@@ -42,6 +42,10 @@ Testée et validée sur :
 
 - Python 3.10+
 - pip
+- Git (pour cloner le dépôt)
+- Navigateur web moderne (Chrome, Edge, Firefox, Opera)
+- Connexion Internet (pour accéder à l'application en ligne ou installer les dépendances)
+- Clé API Groq (optionnelle — uniquement pour le chatbot)
 
 ---
 
