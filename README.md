@@ -83,21 +83,25 @@ GROQ_API_KEY=votre_cle_groq
 
 ```
 web_app/
-├── app.py                  # Application Flask principale
-├── data_loader.py          # Chargement et traitement des données
-├── chatbot.py              # Module chatbot (API Groq)
-├── requirements.txt        # Dépendances Python
-├── Procfile                # Configuration déploiement Render (gunicorn)
-├── data_export/            # Données et modèles exportés depuis le notebook
-│   ├── clf.pkl             # Modèle XGBoost calibré
-│   ├── base_clf.pkl        # Modèle XGBoost de base
-│   ├── encoders.pkl        # Encodeurs des variables catégorielles
-│   ├── model_meta.json     # Métadonnées du modèle (accuracy, features)
-│   ├── taux_hist.json      # Taux historiques par catégorie/code opération
-│   ├── df_merge.pkl        # Dataset principal (interventions matchées)
-│   └── df_prog_unmatched.pkl  # Planning non réalisé
-├── templates/              # Pages HTML (Jinja2)
-└── static/                 # CSS et images
+├── app.py                      # Application Flask principale
+├── data_loader.py              # Chargement et traitement des données
+├── chatbot.py                  # Module chatbot (API Groq)
+├── requirements.txt            # Dépendances Python
+├── Procfile                    # Configuration déploiement Render (gunicorn)
+├── data_export/                # Données et modèles exportés depuis le notebook
+│   ├── clf.pkl                 # Modèle XGBoost calibré (classification)
+│   ├── base_clf.pkl            # Modèle XGBoost de base
+│   ├── encoders.pkl            # Encodeurs des variables catégorielles
+│   ├── model_meta.json         # Métadonnées du modèle (accuracy, features)
+│   ├── taux_hist.json          # Taux historiques par catégorie/code opération
+│   ├── df_merge.pkl            # Dataset principal (interventions matchées)
+│   ├── df_merge.parquet        # Dataset principal (format compressé)
+│   ├── df_prog_clean.pkl       # Données PROGONE nettoyées
+│   ├── df_prog_unmatched.pkl   # Planning non réalisé
+│   ├── df_prog_unmatched.parquet
+│   └── df_real_clean.pkl       # Données GMAO nettoyées
+├── templates/                  # Pages HTML (Jinja2)
+└── static/                     # CSS et images
 ```
 
 ---
