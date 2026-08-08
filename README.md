@@ -28,16 +28,6 @@ développée dans le cadre d'un projet d'alternance à la STF (Supervision Techn
 
 ---
 
-## Base de données
-
-Cette application n'utilise pas de base de données SQL.
-Les données sont stockées sous forme de fichiers sérialisés (`.pkl`, `.parquet`, `.json`)
-dans le répertoire `data_export/`, exportés depuis le notebook d'analyse.
-
-> Il n'y a donc pas de fichier SQL dump à fournir.
-
----
-
 ## Compatibilité navigateurs
 
 Testée et validée sur :
@@ -134,3 +124,11 @@ web_app/
 > et ne nécessite pas les fichiers Excel pour être déployée ou testée.
 > Pour exécuter le notebook d'analyse complet, les fichiers Excel sources sont nécessaires
 > et disponibles dans le ZIP remis à l'école.
+
+## Base de données
+
+Cette application n'utilise pas de base de données SQL.
+Les données sont stockées sous forme de fichiers sérialisés (`.pkl`, `.parquet`, `.json`)
+dans le répertoire `data_export/`, exportés depuis le notebook d'analyse.
+
+> Il n'y a donc pas de fichier SQL dump à fournir.
