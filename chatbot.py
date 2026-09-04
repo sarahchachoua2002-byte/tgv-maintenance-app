@@ -153,14 +153,13 @@ def answer(message, history=None):
             temperature=0.3
         )
         raw = response.choices[0].message.content.strip()
-        # Supprimer le bloc de réflexion interne si le modèle l'affiche
+        # Supprimer le bloc de réflexion interne (format "Here's a thinking process:...chiffre\n\nRéponse")
         import re as _re
-        # Cherche un séparateur clair après le bloc de réflexion
-        for pattern in [r"(?s)^.*?(?:Draft:|Final answer:|Réponse\s*:)\s*", r"(?s)^.*?\n\n(?=[A-ZÀ-ŸLl])"]:
-            m = _re.match(pattern, raw)
-            if m and len(raw) - m.end() > 30:
-                raw = raw[m.end():].strip()
-                break
+        # Coupe tout ce qui précède le dernier double saut de ligne si un bloc thinking est détecté
+        if any(marker in raw[:80] for marker in ["Here's a thinking", "thinking process", "Thinking:", "**Thinking"]):
+            parts = raw.rsplit("\n\n", 1)
+            if len(parts) == 2 and len(parts[1]) > 20:
+                raw = parts[1].strip()
         return raw
 
     except Exception as e:
