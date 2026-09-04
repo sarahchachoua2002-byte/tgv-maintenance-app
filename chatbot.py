@@ -116,9 +116,6 @@ Ops fréquentes: {', '.join(f"{c}:{n}x" for c,n in top_ops.items())}
 Stats semaines: {', '.join(f"S{s}:{v['real']}réal/{v['non_real']}nonréal" for s,v in stats_sem.items())}
 
 Règles: réponds français, 3-5 lignes max, utilise uniquement ces données."""
-- Sois concis (3-5 lignes max)
-- Si vraiment une info n'est pas dans les données, dis-le clairement
-"""
 
     _context_cache['ctx'] = ctx
     return ctx
