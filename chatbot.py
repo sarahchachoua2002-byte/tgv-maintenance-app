@@ -146,8 +146,12 @@ def answer(message, history=None):
         raw = response.choices[0].message.content.strip()
         # Supprimer le bloc de réflexion interne si le modèle l'affiche
         import re as _re
-        raw = _re.sub(r"(?s)Here'?s?\s+a?\s*thinking.*?(?=\n[A-ZÀ-Ÿa-zà-ÿ]|\Z)", "", raw).strip()
-        raw = _re.sub(r"(?s)\*\*Thinking.*?\*\*\n.*?(?=\n[A-ZÀ-Ÿ]|\Z)", "", raw).strip()
+        # Cherche un séparateur clair après le bloc de réflexion
+        for pattern in [r"(?s)^.*?(?:Draft:|Final answer:|Réponse\s*:)\s*", r"(?s)^.*?\n\n(?=[A-ZÀ-ŸLl])"]:
+            m = _re.match(pattern, raw)
+            if m and len(raw) - m.end() > 30:
+                raw = raw[m.end():].strip()
+                break
         return raw
 
     except Exception as e:
