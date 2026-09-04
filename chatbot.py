@@ -14,6 +14,21 @@ client = OpenAI(
 
 _context_cache = {}
 
+def _get_model():
+    """Retourne le premier modèle de chat disponible sur ce compte Groq."""
+    try:
+        models = client.models.list()
+        for m in models.data:
+            mid = m.id
+            if any(k in mid for k in ['llama', 'gemma', 'mixtral', 'qwen', 'deepseek']):
+                print(f"[GROQ] Modèle sélectionné : {mid}", flush=True)
+                return mid
+    except Exception as e:
+        print(f"[GROQ] Impossible de lister les modèles : {e}", flush=True)
+    return "llama-3.3-70b-versatile"
+
+_MODEL = _get_model()
+
 
 def _build_context():
     """Construit un résumé des données réelles à envoyer à Grok."""
@@ -161,7 +176,7 @@ def answer(message, history=None):
         messages.append({"role": "user", "content": message})
 
         response = client.chat.completions.create(
-            model="gemma2-9b-it",
+            model=_MODEL,
             messages=messages,
             max_tokens=400,
             temperature=0.3
