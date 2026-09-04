@@ -15,16 +15,25 @@ client = OpenAI(
 _context_cache = {}
 
 def _get_model():
-    """Retourne le premier modèle de chat disponible sur ce compte Groq."""
+    """Teste les modèles disponibles et retourne le premier qui supporte le chat."""
     try:
         models = client.models.list()
-        for m in models.data:
-            mid = m.id
-            if any(k in mid for k in ['llama', 'gemma', 'mixtral', 'qwen', 'deepseek']):
+        candidates = [m.id for m in models.data
+                      if any(k in m.id for k in ['llama', 'gemma', 'mixtral', 'qwen', 'deepseek', 'compound'])
+                      and 'guard' not in m.id and 'whisper' not in m.id]
+        for mid in candidates:
+            try:
+                client.chat.completions.create(
+                    model=mid,
+                    messages=[{"role": "user", "content": "ok"}],
+                    max_tokens=5
+                )
                 print(f"[GROQ] Modèle sélectionné : {mid}", flush=True)
                 return mid
+            except Exception:
+                continue
     except Exception as e:
-        print(f"[GROQ] Impossible de lister les modèles : {e}", flush=True)
+        print(f"[GROQ] Erreur listing modèles : {e}", flush=True)
     return "llama-3.3-70b-versatile"
 
 _MODEL = _get_model()
