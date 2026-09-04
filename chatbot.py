@@ -82,13 +82,13 @@ def _build_context():
             total = nr + nn
             taux_site[site] = f"{round(100*nr/total)}% ({nr} réalisées / {total} planifiées)" if total > 0 else f"{nr} opérations réalisées"
 
-    # Top 10 rames avec le plus grand écart moyen
+    # Top 5 rames avec le plus grand écart moyen
     ecarts_rame = df_merge.groupby('n__rame')['ecart_debut_h'].mean().sort_values(ascending=False)
-    top_retards = ecarts_rame.head(10).round(1).to_dict()
-    top_avances = ecarts_rame.tail(5).round(1).to_dict()
+    top_retards = ecarts_rame.head(5).round(1).to_dict()
+    top_avances = ecarts_rame.tail(3).round(1).to_dict()
 
     # Top 5 opérations les plus fréquentes
-    top_ops = df_merge['code_op'].value_counts().head(10).to_dict()
+    top_ops = df_merge['code_op'].value_counts().head(5).to_dict()
 
     # Semaines disponibles
     col_sem = 'semaine_iso' if 'semaine_iso' in df_merge.columns else 'semaine_annee'
@@ -126,7 +126,7 @@ Taux de réalisation par catégorie :
 {chr(10).join(f"  - {cat} : {ec}" for cat, ec in ecarts.items())}
 
 Rames par site de maintenance :
-{chr(10).join(f"  - {site} : {', '.join(rames[:20])}{'...' if len(rames)>20 else ''}" for site, rames in rames_par_site.items())}
+{chr(10).join(f"  - {site} : {', '.join(rames[:8])}{'...' if len(rames)>8 else ''}" for site, rames in rames_par_site.items())}
 
 Top 10 rames avec le plus grand retard moyen (écart début planifié vs réel en heures) :
 {chr(10).join(f"  - Rame {r} : +{v}h de retard moyen" for r, v in top_retards.items())}
@@ -169,7 +169,7 @@ def answer(message, history=None):
 
         # Historique de conversation (mémoire des échanges précédents)
         if history:
-            for h in history[-6:]:  # garder les 6 derniers échanges
+            for h in history[-3:]:  # garder les 3 derniers échanges
                 messages.append({"role": "user",      "content": h["user"]})
                 messages.append({"role": "assistant",  "content": h["bot"]})
 
