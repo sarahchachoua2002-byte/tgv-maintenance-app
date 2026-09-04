@@ -169,7 +169,7 @@ def answer(message, history=None):
         return response.choices[0].message.content.strip()
 
     except Exception as e:
-        # Fallback sur les règles si l'API est indisponible
+        print(f"[GROQ ERROR] {type(e).__name__}: {e}", flush=True)
         return _fallback(message)
 
 
