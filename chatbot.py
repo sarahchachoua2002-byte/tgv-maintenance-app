@@ -161,7 +161,7 @@ def answer(message, history=None):
         messages.append({"role": "user", "content": message})
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-8b-8192",
             messages=messages,
             max_tokens=400,
             temperature=0.3
@@ -220,7 +220,7 @@ def _fallback(message):
             lines.append(f"  • {cat} : {taux}%")
         return '\n'.join(lines)
 
-    return "⚠️ API Grok indisponible (crédits insuffisants). Active les crédits sur console.x.ai pour les réponses intelligentes."
+    return "⚠️ Assistant temporairement indisponible. Veuillez réessayer dans quelques instants."
 
 
 def list_models():
