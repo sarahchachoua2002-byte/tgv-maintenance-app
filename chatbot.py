@@ -115,7 +115,7 @@ Top retards rames: {', '.join(f"rame {r}:+{v}h" for r,v in top_retards.items())}
 Ops fréquentes: {', '.join(f"{c}:{n}x" for c,n in top_ops.items())}
 Stats semaines: {', '.join(f"S{s}:{v['real']}réal/{v['non_real']}nonréal" for s,v in stats_sem.items())}
 
-Règles: réponds français, 3-5 lignes max, utilise uniquement ces données."""
+Règles: réponds DIRECTEMENT en français sans afficher ton raisonnement, 3-5 lignes max, utilise uniquement ces données."""
 
     _context_cache['ctx'] = ctx
     return ctx
@@ -142,7 +142,12 @@ def answer(message, history=None):
             max_tokens=400,
             temperature=0.3
         )
-        return response.choices[0].message.content.strip()
+        raw = response.choices[0].message.content.strip()
+        # Supprimer le bloc de réflexion interne si le modèle l'affiche
+        import re as _re
+        raw = _re.sub(r"(?s)Here'?s?\s+a?\s*thinking.*?(?=\n[A-ZÀ-Ÿa-zà-ÿ]|\Z)", "", raw).strip()
+        raw = _re.sub(r"(?s)\*\*Thinking.*?\*\*\n.*?(?=\n[A-ZÀ-Ÿ]|\Z)", "", raw).strip()
+        return raw
 
     except Exception as e:
         print(f"[GROQ ERROR] {type(e).__name__}: {e}", flush=True)
