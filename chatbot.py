@@ -161,7 +161,7 @@ def answer(message, history=None):
         messages.append({"role": "user", "content": message})
 
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="gemma2-9b-it",
             messages=messages,
             max_tokens=400,
             temperature=0.3
