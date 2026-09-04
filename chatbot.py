@@ -110,7 +110,8 @@ Sites: {', '.join(sites)} (BXG=Bordeaux,MPL=Montpellier,LL=Le Landy,PSE=Paris Su
 
 Taux/catégorie: {', '.join(f"{c}:{t}" for c,t in taux_cat.items())}
 Taux/site: {', '.join(f"{s}:{t.split('(')[0].strip()}" for s,t in taux_site.items())}
-Écart moyen/catégorie (h, positif=retard): {', '.join(f"{c}:{e}" for c,e in ecarts.items())}
+Écart moyen début/catégorie en heures — ATTENTION: valeur POSITIVE=retard, valeur NEGATIVE=avance (réalisé AVANT le planifié, donc bon signe). La catégorie avec le plus de RETARD est celle avec l'écart le plus POSITIF:
+{chr(10).join(f"  {c}: {e} ({'RETARD' if float(e.replace('h','')) > 0 else 'AVANCE'})" for c,e in ecarts.items())}
 Top retards rames: {', '.join(f"rame {r}:+{v}h" for r,v in top_retards.items())}
 Ops fréquentes: {', '.join(f"{c}:{n}x" for c,n in top_ops.items())}
 Stats semaines: {', '.join(f"S{s}:{v['real']}réal/{v['non_real']}nonréal" for s,v in stats_sem.items())}
